@@ -1,0 +1,45 @@
+---
+-   instance: 1
+    defaults-file: "/opt/projects/repctl/config/mysql.cnf" 
+    datadir: /opt/MySQL/instances/data1 
+    port: 3307
+    hostname: 127.0.0.1
+    server-id: 10
+    socket: /tmp/mysql1.sock 
+    innodb_data_home_dir: /opt/MySQL/instances/data1
+    innodb_log_group_home_dir: /opt/MySQL/instances/data1
+    pid-file: /opt/MySQL/instances/data1/deimos.pid
+
+-   instance: 2
+    defaults-file: "/opt/projects/repctl/config/mysql.cnf" 
+    datadir: /opt/MySQL/instances/data2 
+    port: 3308
+    hostname: 127.0.0.1
+    server-id: 20
+    socket: /tmp/mysql2.sock 
+    innodb_data_home_dir: /opt/MySQL/instances/data2
+    innodb_log_group_home_dir: /opt/MySQL/instances/data2
+    pid-file: /opt/MySQL/instances/data2/deimos.pid
+
+-   instance: 3
+    defaults-file: "/opt/projects/repctl/config/mysql.cnf" 
+    datadir: /opt/MySQL/instances/data3 
+    port: 3309
+    hostname: 127.0.0.1
+    server-id: 30
+    socket: /tmp/mysql3.sock 
+    innodb_data_home_dir: /opt/MySQL/instances/data3
+    innodb_log_group_home_dir: /opt/MySQL/instances/data3
+    pid-file: /opt/MySQL/instances/data3/deimos.pid
+
+-   instance: 4
+    defaults-file: "/opt/projects/repctl/config/mysql.cnf" 
+    datadir: /opt/MySQL/instances/data4 
+    port: 3310
+    hostname: 127.0.0.1
+    server-id: 40
+    socket: /tmp/mysql4.sock 
+    innodb_data_home_dir: /opt/MySQL/instances/data4
+    innodb_log_group_home_dir: /opt/MySQL/instances/data4
+    pid-file: /opt/MySQL/instances/data4/deimos.pid
+
