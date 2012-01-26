@@ -1,8 +1,31 @@
-= Simple-Repctl - Manage Replication among a set of MySQL Servers 
+# Repctl - Manage Replication among a set of SQL Servers 
 
-+simple-repctl+ is a utility to configure, reconfigure, start, stop, crash, generate workloads, dump, restore, benchmark, and monitor a set of MySQL servers for development environments where all the MySQL instances run on a single computer.  Replication relationships can be set up among the instances with a single command. While running a load generator or benchmark, the replication status, including current lag, can be seen in a continuously updated display. A slave can be added to an existing server that already has data.  
+ `repctl` is a utility to configure, reconfigure, start, stop, crash, generate
+ workloads, dump, restore, benchmark, and monitor a set of SQL servers for
+ development environments.  Replication relationships can be set up among server
+ instances with a single command. While running a load generator or benchmark,
+ the replication status, including current lag, can be seen in a continuously
+ updated display. A slave can be added to an existing server that already has
+ data.
 
-+simple-repctl+ is written in Ruby as a Thor script.  It can be viewed as a specialized version of Guiseppe Maxia's <i>MySQL Sandbox</i> (https://launchpad.net/mysql-sandbox), but it is derived from a more sophisticated version of a +repctl+ tool that works across multiple virtual machine instances in a cloud computing environment.
+The `repctl` gem includes a _Thor_ script that makes all the `repctl`
+functionality available at the command line.
+
+## Limitations
+
+Currently only MySQL is supported but PostgresSQL will soon be added.  All the
+server instances must run on a single host.  This restriction may be soon lifted
+as well.
+
+## Installation
+
+You will need to have a local installation installation of MySQL.  You do not
+need to do anything to configure the installation.  For example, if you compile
+MySQL from source, then do `make install`, then you are done!  No MySQL
+post-installation steps are necessary.  All post-install configuration is
+handled by `repctl`.
+
+The top
 
 == Available Commands
 
