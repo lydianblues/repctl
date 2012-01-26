@@ -25,6 +25,9 @@ MySQL from source, then do `make install`, then you are done!  No MySQL
 post-installation steps are necessary.  All post-install configuration is
 handled by `repctl`.
 
+You will need to set an environment variable `REPCTL_CONFIG_DIR` in your shell
+so that `repctl` can find the configuration files it needs.  
+
 The top
 
 == Available Commands

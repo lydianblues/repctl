@@ -5,9 +5,11 @@ module Repctl
     # The location of the local MySQL installation.
     MYSQL_HOME = "/usr/local/mysql"
 
-    ROOT_PASSWORD = "har526"
+    ROOT_PASSWORD = "graceling"
 
     SERVER_CONFIG = File.expand_path("../servers.yml", __FILE__)
+
+    GEM_HOME = File.expand_path("../..", __FILE__)
 
     # Define the directory where subdirectores for data will be created
     # for each MySQL server instance.  This should agree with the 

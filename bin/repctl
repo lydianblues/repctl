@@ -1,195 +1,189 @@
 #!/usr/bin/env ruby
 
 require 'socket'
+require 'fileutils'
 require 'repctl'
 require 'thor'
 
-# Thor has the 'helpful' property that any Thor task gets executed only
-# once.  The 'Helpers' module makes many Thor tasks available as ordinary
-# Ruby functions for internal use.  The corresponding Thor tasks usually
-# delegate to the corresponding helper function with 'super'.
-module Helpers
-  
-  include Repctl::Config
-  include Repctl::Servers
-  
-  def start(instance)
-    say "Starting instance #{instance}.", :green
-    do_start(instance)
-  end
-  
-  def start_all
-    all_instances.each do |instance|
-      start(instance)
+module Repctl
+  module Helpers
+    def do_stop(instance)
+      do_admin(instance, "shutdown")
+    end
+
+    def do_reset(instance)
+      do_stop(instance)
+      do_config(instance)
+      do_start(instance)
+      do_secure_accounts(instance)
+    end
+
+    def do_start_slave(instance)
+      run_mysql_query(instance, "START SLAVE")
+    end
+
+    def do_restart(instance)
+      do_admin(instance, "shutown")
+      do_start(instance)
     end
   end
-  
-  def stop(instance)
-    say "Stopping instance #{instance}.", :green
-    do_admin(instance, "shutdown")
-  end
-  
-  def stop_all
-    all_live_instances.each do |instance|
-      stop(instance)
-    end
-  end
-  
-  def config(instance)
-    say "Initializing new data directory for instance #{instance}."
-    do_config(instance)
-  end
-  
-  def config_all
-    all_instances.each do |instance|
-       config(instance)
-     end
-  end
+end
 
-  def secure_accounts(instance)
-    do_secure_accounts(instance)
-  end
-
-  def secure_accounts_all
-    Repctl::Servers.all_live_instances.each do |instance|
-       secure_accounts(instance)
-     end
-  end
-  
-  def reset(instance)
-    stop(instance)
-    config(instance)
-    start(instance)
-    secure_accounts(instance)
-  end
- 
-  def restart(instance)
-    stop(instance)
-    start(instance)
-  end
-
-  def reset_all
-    all_instances.each do |instance|
-       reset(instance)
-     end
-  end
-  
-  def change_master(master, slave, file, position)
-    say "Changing master: master = #{master}, slave = #{slave}, file = #{file}, position = #{position}"
-    do_change_master(master, slave, :file => file, :position => position)
-  end
-      
-  def start_slave(slave)
-    say "Starting slave #{slave}", :green
-    run_mysql_query(slave, "START SLAVE")
-  end
-  
-  def crash(instance)
-    say "Crashing instance #{instance}", :red
-    do_crash(instance)
-  end
-
-  def repl_user(instance)
-    say "Creating replication account on instance #{instance}.", :green
-    do_repl_user(instance)
-  end
-
-  def cluster_user(instance = 1)
-    say "Installing cluster user for instance #{instance}.", :green
-    do_cluster_user(instance)
-  end
-      
-end # Module helpers
-
-class Mysql < Thor
+class RepctlCmds < Thor
 
   include Thor::Actions
   include Repctl::Config
   include Repctl::Commands
   include Repctl::Servers
-  include Helpers
-  
-  desc "start INSTANCE", "Ensure that the given MySQL server instance is running."
-  def start(instance)
-    super
+  include Repctl::Helpers
+
+  desc "start [INSTANCES]", "Start one or more defined server instances."
+  method_option :all, :type  => :boolean, :aliases => "-a",
+    :default => false,  :desc => "Start all defined instances"
+  long_desc <<-EOS
+    Start one or more defined server instances.  With the --all option, 
+    all defined servers are started.  Otherwise, you can give a list of
+    servers to start.  If a server instance is already running, this
+    command has no effect on the instance.
+  EOS
+  def start(*instances)
+    if options[:all]
+      todos = all_instances
+    else
+      todos = instances
+    end
+    todos.each do |instance|
+      say "Starting instance #{instance}.", :green
+      do_start(instance)
+    end
   end
   
-  desc "start_all", "Start all the MySQL instances."
-  def start_all
-    super
+  desc "stop [INSTANCES]", "Stop one or more running server instances."
+  method_option :all, :type  => :boolean, :aliases => "-a",
+    :default => false,  :desc => "Stop all running instances"
+  long_desc <<-EOS
+    Stop one or more running server instances.  With the --all option, 
+    all running servers are stopped.  Otherwise, you can give a list of
+    servers to stop.
+  EOS
+  def stop(*instances)
+    if options[:all]
+      todos = all_live_instances
+    else
+      todos = instances
+    end
+    todos.each do |instance|
+      say "Stopping instance #{instance}.", :green
+      do_stop(instance)
+    end
   end
   
-  desc "stop INSTANCE", "Stop a running MySQL server instance."
-  def stop(instance)
-    super
-  end
-  
-  desc "stop_all", "Stop all the MySQL servers."
-  def stop_all
-    super
-  end
-  
-  desc "config INSTANCE", "Initialize the data directory for a new instance."
-  def config(instance)
-    super
-  end
-  
-  desc "config_all", "Initialize the data directories for all instances."
-  def config_all
-    super
-  end 
-  
-  desc "secure_accounts INSTANCE", "Add passwords for root and anonymous accounts."
-  def secure_accounts(instance)
-    super
+  desc "config [INSTANCES]", "Initialize the data directory for server instances."
+  method_option :all, :type  => :boolean, :aliases => "-a",
+    :default => false,  :desc => "Initialize all defined instances"
+  long_desc <<-EOS
+    Initialize the data directory for one or more server instances.
+    With the --all option, the data directory for all defined servers
+    is initialized. Otherwise, you can give a list of defined server
+    instances.
+  EOS
+  def config(*instances)
+    if options[:all]
+      todos = all_instances
+    else
+      todos = instances
+    end
+    todos.each do |instance|
+    say "Initializing new data directory for instance #{instance}.", :green
+      do_config(instance)
+    end
   end
 
-  desc "secure_accounts_all", "Add passwords for root and anonymous accounts for all instances."
-  def secure_accounts_all
-    super
-  end
-  
-  desc "reset", "Remove the database data directory, reconfigure and restart the instance."
-  def reset(instance)
-    super
+  desc "secure_accounts [INSTANCES]", "Add password to root and anonymous accounts."
+  method_option :all, :type  => :boolean, :aliases => "-a",
+    :default => false,  :desc => "Secure accounts for  all running instances"
+  long_desc <<-EOS
+    Add a password to the existing root and anonymous accounts of one or more
+    running server instances.  With the --all option, all running servers
+    secured.  Otherwise, you can give a list of servers to process.
+  EOS
+  def secure_accounts(*instances)
+    if options[:all]
+      todos = all_live_instances
+    else
+      todos = instances
+    end
+    todos.each do |instance|
+      say "Securing accounts for instance #{instance}.", :green
+      do_secure_accounts(instance)
+    end
   end
 
-  desc "reset_all", "Remove all databases and restart MySQL instances."
-  def reset_all
-    super
+  desc "reset [INSTANCES]", "Reset one or more define server instances."
+  method_option :all, :type  => :boolean, :aliases => "-a",
+    :default => false,  :desc => "Reset all defined instances"
+  long_desc <<-EOS
+    Reset one or more defined server instances. If the --all option is
+    given the target servers are all defined servers, otherwise the
+    target servers are those specified in the instance argument.
+    If a target server instance is running, stop it.  Then configure its
+    data directory, (re)start the server, and secure the accounts.
+  EOS
+  def reset(*instances)
+    if options[:all]
+      todos = all_instances
+    else
+      todos = instances
+    end
+    todos.each do |instance|
+      say "Resetting instance #{instance}.", :green
+      do_reset(instance)
+    end
   end
   
+  desc "restart INSTANCE"  , "Stop and start a server instance."
+  def restart(instance)
+    say "Restarting instance #{instance}", :green
+    do_stop(instance)
+    do_start(instance)
+  end
+
   desc "start_slave SLAVE", "Issue START SLAVE on the SLAVE MySQL instance."
   def start_slave(slave)
-    super
+    say "Starting slave #{slave}", :green
+    do_start_slave(slave)
   end
   
   desc "change_master MASTER SLAVE FILE POSITION", "Execute CHANGE MASTER TO on the SLAVE."
   def change_master(master, slave, file, position)
-    super
+    say "Changing master: master = #{master}, slave = #{slave}, file = #{file}, position = #{position}"
+    do_change_master(master, slave, :file => file, :position => position)
   end
   
-  desc "crash INSTANCE", "Crash a running MySQL server."
+  desc "crash INSTANCE", "Crash a running server."
   def crash(instance)
-    super
+    say "Crashing instance #{instance}", :red
+    do_crash(instance)
   end
   
   desc "repl_user INSTANCE", "Create the replication user account on a MySQL instance."
   def repl_user(instance)
-    super
+    say "Creating replication account on instance #{instance}.", :green
+    do_repl_user(instance)
   end
   
   desc "cluster_user INSTANCE", "Create the cluster user account on a MySQL instance."
   def cluster_user(instance)
-    super
+    say "Installing cluster user for instance #{instance}.", :green
+    do_cluster_user(instance)
   end
-  
-  desc "repl_status", "Show the status of replication."
+
+  desc "status", "Show the status of replication."
    method_option :continuous, :aliases => "-c", :type => :numeric,
     :desc => "Continuous output at specified interval (in seconds)."
   method_option :servers, :aliases => "-s", :type => :array,
     :desc => "Only check the status of given servers."
-  def repl_status
+  def status
     todos = options[:servers] || all_live_instances
     unless todos.any?
       say "No Running Servers.", :blue
@@ -250,9 +244,31 @@ class Mysql < Thor
   def restore(slave, dumpfile = DEFAULT_DUMPFILE)
     do_restore(slave, dumpfile)
   end
-  
+
+  #
+  # Setting Up Replication with Existing Data using the 'mysqldump' utility. The
+  # master has existing data.
+  #
+  desc "add_slave MASTER SLAVE", "Master has some data that is used to initialize the slave."
+  method_option :populate, :type => :boolean, :default => false
+  def add_slave(master, slave)
+    reset(slave)
+    
+    if options[:populate]
+      invoke "utils:bench", [master, "/opt/MySQL/b2.properties"]
+    end
+    file, position = invoke "mysql:dump", [master]
+    
+    # Slave is running, but it is not yet configured as a slave.
+    # Load slave from the dump file...
+    invoke "mysql:restore", [slave]
+    
+    do_change_master(master, slave, :file => file, :position => position)
+    do_start_slave(slave)
+  end
+
   DEFAULT_MASTER = 1
-  
+
   desc "bench [INSTANCE] [PROPS]", "Run the Tungsten Bristlecone benchmarker.
   The INSTANCE specifies the instance to perform all operations to, and PROPS
   is the properties file to use. The INSTANCE defaults to #{DEFAULT_MASTER} and
@@ -334,9 +350,8 @@ class Mysql < Thor
       msecs = options[:delay]
       sleep(msecs / 1000.0) if msecs > 0
     end
-    
   end
-  
+
   #
   # Setting Up Replication with New Master and Slaves.
   # Here, we stop all MySQL servers, remove the data directories, reinitialize
@@ -347,16 +362,16 @@ class Mysql < Thor
     "Set up a single master/slave replication pair from the very beginning."
   def repl_pair(master, slave)
     say "master is #{master}, slave is #{slave}", :green
-    reset(master)
-    reset(slave)
-    cluster_user(master)
-    repl_user(master)
+    do_reset(master)
+    do_reset(slave)
+    do_cluster_user(master)
+    do_repl_user(master)
     coordinates = get_coordinates(master)
     file = coordinates[:file]
     position = coordinates[:position]
     say "File is #{file}, Position is #{position}", :green
-    change_master(master, slave, file, position)
-    start_slave(slave)
+    do_change_master(master, slave, :file => file, :position => position)
+    do_start_slave(slave)
   end
 
   desc "repl_trio MASTER SLAVE1 SLAVE2",
@@ -365,48 +380,41 @@ class Mysql < Thor
   def repl_trio(master, slave1, slave2)
     say "master is #{master}, slaves are #{slave1} and #{slave2}", :green
     if options[:reset]
-      reset(master)
-      reset(slave1)
-      reset(slave2)
-      cluster_user(master)
-      repl_user(master)
+      do_reset(master)
+      do_reset(slave1)
+      do_reset(slave2)
+      do_cluster_user(master)
+      do_repl_user(master)
     else
-      restart(master)
-      restart(slave1)
-      restart(slave2)
+      do_restart(master)
+      do_restart(slave1)
+      do_restart(slave2)
     end
     coordinates = get_coordinates(master)
     file = coordinates[:file]
     position = coordinates[:position]
     say "File is #{file}, Position is #{position}", :green
-    change_master(master, slave1, file, position)
-    start_slave(slave1)
-    change_master(master, slave2, file, position)
-    start_slave(slave2)
+    do_change_master(master, slave1, :file => file, :position => position)
+    do_start_slave(slave1)
+    do_change_master(master, slave2, :file => file, :position => position)
+    do_start_slave(slave2)
   end
-    
-  #
-  # Setting Up Replication with Existing Data using the 'mysqldump' utility. The
-  # master has existing data.
-  #
-  desc "add_slave MASTER SLAVE", "Master has some data that is used to initialize the slave."
-  method_option :populate, :type => :boolean, :default => false
-  def add_slave(master, slave)
-    reset(slave)
-    
-    if options[:populate]
-      invoke "utils:bench", [master, "/opt/MySQL/b2.properties"]
+
+  desc "install sample config files to DIRECTORY", "After initial install, use these "
+  "as templates for configuration. The target directory must exist and be empty."
+  def install_sample_configs(dest_dir) 
+    source_dir =  File.join(Repctl::Config.const_get(:GEM_HOME), "config")
+    source_files = Dir.glob(File.join(source_dir, '*'))
+    if File.directory?(dest_dir)
+      if Dir.entries(dest_dir).size == 2 # directory is empty
+        FileUtils.copy(source_files, dest_dir)
+      else
+        say "Target directory must be empty.", :red
+      end
+    else
+      say "Config target #{to_dir} is not a directory.", :red
     end
-    file, position = invoke "mysql:dump", [master]
-    
-    # Slave is running, but it is not yet configured as a slave.
-    # Load slave from the dump file...
-    invoke "mysql:restore", [slave]
-    
-    change_master(master, slave, file, position)
-    start_slave(slave)
   end
-  
 end
 
-Mysql.start
+RepctlCmds.start
