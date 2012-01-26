@@ -1,5 +1,8 @@
+#!/usr/bin/env ruby
+
 require 'socket'
 require 'repctl'
+require 'thor'
 
 # Thor has the 'helpful' property that any Thor task gets executed only
 # once.  The 'Helpers' module makes many Thor tasks available as ordinary
@@ -99,7 +102,7 @@ module Helpers
 end # Module helpers
 
 class Mysql < Thor
-  
+
   include Thor::Actions
   include Repctl::Config
   include Repctl::Commands
@@ -248,16 +251,6 @@ class Mysql < Thor
     do_restore(slave, dumpfile)
   end
   
-end
-
-class Utils < Thor
-  
-  include Thor::Actions
-  include Repctl::Config
-  include Repctl::Commands
-  include Repctl::Servers
-  include Helpers
-  
   DEFAULT_MASTER = 1
   
   desc "bench [INSTANCE] [PROPS]", "Run the Tungsten Bristlecone benchmarker.
@@ -270,10 +263,8 @@ class Utils < Thor
     run("#{BENCHMARK} -props #{props}", :verbose => true, :capture => false)
   end
   
-  desc "create_db [INSTANCE] [DBNAME]", <<-EOS
-    "Create a database on a MySQL instance.  INSTANCE defaults to DEFAULT_MASTER,
-    and DBNAME defaults to "widgets".
-  EOS
+  desc "create_db [INSTANCE] [DBNAME]", "Create a database on a MySQL instance.
+  INSTANCE defaults to DEFAULT_MASTER, and DBNAME defaults to \"widgets\"."
   method_option :replace, :type => :boolean, :aliases => "-r",
     :desc => "drop and recreate the database"
   def create_db(instance = DEFAULT_MASTER, dbname = "widgets")
@@ -281,10 +272,9 @@ class Utils < Thor
     run_mysql_query(instance, "CREATE DATABASE IF NOT EXISTS #{dbname}")
   end
   
-  desc "create_tbl [INSTANCE] [DBNAME] [TBLNAME]", <<-EOS
-    Create a database table. INSTANCE defaults to DEFAULT_MASTER, DBNAME defaults
-    to "widgets" and TBLNAME defaults to "users".  The table schema is fixed.
-  EOS
+  desc "create_tbl [INSTANCE] [DBNAME] [TBLNAME]", "Create a database table."
+  "INSTANCE defaults to DEFAULT_MASTER, DBNAME defaults
+    to \"widgets\" and TBLNAME defaults to \"users\".  The table schema is fixed."
   method_option :replace, :type => :boolean, :aliases => "-r",
     :desc => "drop and recreate the table"
   def create_tbl(instance = DEFAULT_MASTER, dbname = "widgets", tblname = "users")
@@ -304,10 +294,10 @@ class Utils < Thor
     run_mysql_query(instance, cmd)
   end
   
-  desc "gen_rows [INSTANCE], [DBNAME], [TBLNAME]", <<-EOS
-    Add rows to a table that was created by "utils:create_tbl". INSTANCE defaults
-    to DEFAULT_MASTER, DBNAME defaults to "widgets", and TBLNAME defaults to "users".
-  EOS
+  desc "gen_rows [INSTANCE], [DBNAME], [TBLNAME]", "Add rows to a table that
+    was created by \"utils:create_tbl\". INSTANCE defaults
+    to DEFAULT_MASTER, DBNAME defaults to \"widgets\", and TBLNAME defaults
+    to \"users\"."
   method_option :delay, :type => :numeric, :aliases => "-d", :default => 0, 
     :desc => "sleep for the specified number of milliseconds between row inserts."
     method_option :count, :type => :numeric, :aliases => "-c", :default => 1000, 
@@ -346,16 +336,6 @@ class Utils < Thor
     end
     
   end
-  
-end
-
-class Setup < Thor
-  
-  include ::Thor::Actions
-  include Repctl::Config
-  include Repctl::Commands
-  include Repctl::Servers
-  include Helpers
   
   #
   # Setting Up Replication with New Master and Slaves.
@@ -429,3 +409,4 @@ class Setup < Thor
   
 end
 
+Mysql.start
