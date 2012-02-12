@@ -189,7 +189,7 @@ class RepctlCmds < Thor
       say "No Running Servers.", :blue
       return
     end
-    header = sprintf("%-5s%-25s%-25s%-25s%-8s\n",
+    header = sprintf("%-5s%-27s%-27s%-27s%-8s\n",
       "inst", "master", "received", "applied", "lag")
       
     loop do  
@@ -209,14 +209,14 @@ class RepctlCmds < Thor
           lag = slave_status["Seconds_Behind_Master"]
         end
           
-        format = "%-5d%16s:%-8d"
+        format = "%-5d%16s:%-10d"
         if is_slave
           if lag
             lag = lag.to_s
           else
             lag = "-"
           end
-          format += "%16s:%-8d%16s:%-8d%-8s"
+          format += "%16s:%-10d%16s:%-10d%-8s"
           str = sprintf(format, i, master_file, master_pos, recv_file, recv_pos,
             apply_file, apply_pos, lag)
         else
