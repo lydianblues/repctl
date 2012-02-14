@@ -82,6 +82,8 @@ module Repctl
     #   do_repl_user
     #   do_cluster_user
     #   do_create_widgets
+    #   do_switch_master
+    #   do_stop_slave
     #   get_coordinates
     #   get_mysqld_pid
     #   get_slave_status
@@ -186,7 +188,9 @@ module Repctl
         "Relay_Master_Log_File",
         "Exec_Master_Log_Pos",
         "Relay_Log_File",
-        "Relay_Log_Pos"
+        "Relay_Log_Pos",
+        "Master_Host",
+        "Master_Port"
       ]
       results = {}
       status = do_slave_status(instance)
@@ -232,17 +236,17 @@ module Repctl
     # set global innodb_max_dirty_pages_pct = 75;
     # 
     
-    def do_change_master(master, slave, coordinates)
+    def do_change_master(master, slave, coordinates, opts = {})
       master_server = server_for_instance(master)
+      raise "master_server is nil" unless master_server
+          
       begin
         slave_connection = Client.open(slave)
         if slave_connection
           
-          # Replication on the slave can't be running if we want to execute
-          # CHANGE MASTER TO.  
+          # Replication on the slave can't be running if we want to
+          # execute CHANGE MASTER TO.  
           slave_connection.query("STOP SLAVE") rescue Mysql2::Error
-          
-          raise "master_server is nil" unless master_server
           
           cmd = <<-EOT
 CHANGE MASTER TO
@@ -261,7 +265,10 @@ EOT
       rescue Mysql2::Error => e
           puts e.message
       ensure
-        slave_connection.close if slave_connection
+        if slave_connection
+          slave_connection.query("START SLAVE") if opts[:restart]
+          slave_connection.close 
+        end
       end
     end
         
@@ -416,6 +423,31 @@ EOT
       Integer(File.open(pidfile, &:readline).strip)
     end
 
+    # 'master' is currently a slave that is to be the new master.
+    # 'slaves' contains the list of slaves, one of these may be the
+    # current master.
+    def do_switch_master(master, slaves)
+      master = master.to_i
+      slaves = slaves.map(&:to_i)
+
+      # Step 1. Make sure all slaves have completely processed their
+      # Relay Log.
+      slaves.each do |s|
+        # This will also stop the slave threads.
+        drain_relay_log(s) if is_slave?(s)
+      end
+      
+      # Step 2. For the slave being promoted to master, issue STOP SLAVE
+      # and RESET MASTER.  Get the coordinates of its binlog.
+      promote_slave_to_master(master)
+      coordinates = get_coordinates(master)
+
+      # Step 3.  Change the master for the other slaves.
+      slaves.each do |s|
+        do_change_master(master, s, coordinates, :restart => true)
+      end
+    end
+
     private
     
      # This is an example template to create commands to issue queries.
@@ -433,54 +465,13 @@ EOT
        client.close if client
      end
 
-    # 'master' is the new master
-    # 'slaves' is contains the list of slaves, one of these may be the current master.
-    def switch_master_to(master, slaves)
-
-      slaves = Array(slaves)
-      
-      # Step 1. Make sure all slaves have completely processed their
-      # Relay Log.
-      slaves.each do |s|
-        puts "Draining relay log for slave instance #{s}"
-        drain_relay_log(s) if is_slave?(s)
-      end
-      
-      # Step 2. For the slave being promoted to master, issue STOP SLAVE
-      # and RESET MASTER.
-      client = Client.open(master)
-      client.query("STOP SLAVE")
-      client.query("RESET MASTER")
-      client.close
-
-      # Step 3.  Change the master for the other slaves (and the former master?)
-      # XXX this is not complete -- what about the coordinates?
-      master_server = server_for_instance(master)
-      master_host = 'localhost' # should be master_server[:hostname]
-      master_user = 'repl'
-      master_password = 'har526'
-      master_port = master_server[:port]
-      slaves.each do |s|
-        client = Client.open(s)
-        cmd = <<-EOT
-          CHANGE MASTER TO
-            MASTER_HOST=\'#{master_host}\',
-            MASTER_PORT=#{master_port},
-            MASTER_USER=\'#{master_user}\',
-            MASTER_PASSWORD=\'#{master_password}\'
-        EOT
-        client.query(cmd)
-        client.query("START SLAVE")
-        client.close
-      end
-    end
     
     def is_master?(instance)
       get_slave_coordinates(instance).empty?
     end
 
     def is_slave?(instance)
-      !is_master?(instance)
+        get_slave_status(instance).has_key?("Slave_IO_State")
     end
     
     def find_masters()
@@ -513,7 +504,6 @@ EOT
       client.close if client
     end
 
-    # unused
     def promote_slave_to_master(instance)
       client = Client.open(instance)
       if client 
@@ -566,7 +556,8 @@ EOT
             end
           end
           puts "Waiting for slave to read relay log." unless done
-        end  
+        end
+        client.query("STOP SLAVE")
       else
         puts "Could not open connection to instance #{instance}."
       end
@@ -574,24 +565,6 @@ EOT
       client.close if client
     end
 
-=begin
-    # This is an example template to create commands to issue queries.
-    def do_slave_status(instance)
-      client = Client.open(instance)
-      if client
-        results = client.query("SHOW SLAVE STATUS")
-        results.each_with_index do |index, line|
-          puts "#{index}: #{line}"
-        end
-      else
-        puts "Could not open connection to MySQL instance #{instance}."
-      end
-    rescue Mysql2::Error => e
-      puts e.message
-    ensure
-      client.close if client
-    end
-=end
     #
     # Get the status of replication for the master and all slaves.
     # Return an array of hashes, each hash has the form:
@@ -628,10 +601,6 @@ EOT
     
   end
 end
-
-# STOP SLAVE
-# RESET MASTER
-# CHANGE MASTER TO
 
 class RunExamples
   include Repctl::Commands

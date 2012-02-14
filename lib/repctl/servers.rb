@@ -34,6 +34,15 @@ module Repctl
       get_mysqld_pid(instance)
     end
 
+    def instance_for(host, port)
+      @servers.each do |s|
+        if s["hostname"] == host && s["port"].to_i == port.to_i
+          return s["instance"].to_i
+        end
+      end
+      return nil
+    end
+
     private
 
     # Return the process ID (pid) for an instance. 

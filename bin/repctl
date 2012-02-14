@@ -22,6 +22,10 @@ module Repctl
       run_mysql_query(instance, "START SLAVE")
     end
 
+    def do_stop_slave(instance)
+      run_mysql_query(instance, "STOP SLAVE")
+    end
+
     def do_restart(instance)
       do_admin(instance, "shutown")
       do_start(instance)
@@ -141,7 +145,7 @@ class RepctlCmds < Thor
     end
   end
   
-  desc "restart INSTANCE"  , "Stop and start a server instance."
+  desc "restart INSTANCE", "Stop and start a server instance."
   def restart(instance)
     say "Restarting instance #{instance}", :green
     do_stop(instance)
@@ -153,6 +157,12 @@ class RepctlCmds < Thor
     say "Starting slave #{slave}", :green
     do_start_slave(slave)
   end
+
+  desc "stop_slave SLAVE", "Issue STOP SLAVE on the SLAVE MySQL instance."
+  def stop_slave(slave)
+    say "Stopping slave #{slave}", :green
+    do_stop_slave(slave)
+  end
   
   desc "change_master MASTER SLAVE FILE POSITION", "Execute CHANGE MASTER TO on the SLAVE."
   def change_master(master, slave, file, position)
@@ -160,6 +170,12 @@ class RepctlCmds < Thor
     do_change_master(master, slave, :file => file, :position => position)
   end
   
+  desc "switch_master MASTER SLAVES", "Change the master of a running cluster."
+  def switch_master(master, *slaves)
+    do_switch_master(master, slaves)
+    say "Switching to master #{master}", :green
+  end
+
   desc "crash INSTANCE", "Crash a running server."
   def crash(instance)
     say "Crashing instance #{instance}", :red
@@ -197,29 +213,32 @@ class RepctlCmds < Thor
     
       todos.each do |i|
         coordinates = get_coordinates(i)
-        slave_status = get_slave_status(i)
-        is_slave = !(slave_status["Error"] == "MySQL server is not a slave.")
         master_file = coordinates[:file]
         master_pos =  coordinates[:position]
-        if is_slave
+        slave = is_slave?(i)
+        if slave
+          slave_status = get_slave_status(i)
           recv_file = slave_status["Master_Log_File"]
           recv_pos = slave_status["Read_Master_Log_Pos"]
           apply_file = slave_status["Relay_Master_Log_File"]
           apply_pos = slave_status["Exec_Master_Log_Pos"]
           lag = slave_status["Seconds_Behind_Master"]
+          master_host = slave_status["Master_Host"]
+          master_port = slave_status["Master_Port"]
+          master_instance = instance_for(master_host, master_port)
         end
-          
-        format = "%-5d%16s:%-10d"
-        if is_slave
+        
+        if slave
           if lag
             lag = lag.to_s
           else
             lag = "-"
           end
-          format += "%16s:%-10d%16s:%-10d%-8s"
-          str = sprintf(format, i, master_file, master_pos, recv_file, recv_pos,
-            apply_file, apply_pos, lag)
+          format = "%1d%-4s%16s:%-10d%16s:%-10d%16s:%-10d%-8s"
+          str = sprintf(format, i, "(#{master_instance.to_s})", master_file,
+            master_pos, recv_file, recv_pos, apply_file, apply_pos, lag)
         else
+          format = "%-5d%16s:%-10d"
           str = sprintf(format, i, master_file, master_pos)
         end
       
@@ -257,14 +276,18 @@ class RepctlCmds < Thor
     if options[:populate]
       invoke "utils:bench", [master, "/opt/MySQL/b2.properties"]
     end
-    file, position = invoke "mysql:dump", [master]
+    file, position = invoke "dump", [master]
     
     # Slave is running, but it is not yet configured as a slave.
     # Load slave from the dump file...
-    invoke "mysql:restore", [slave]
+    invoke "restore", [slave]
     
     do_change_master(master, slave, :file => file, :position => position)
     do_start_slave(slave)
+
+    do_cluster_user(slave)
+    do_repl_user(slave)
+
   end
 
   DEFAULT_MASTER = 1
@@ -383,13 +406,18 @@ class RepctlCmds < Thor
       do_reset(master)
       do_reset(slave1)
       do_reset(slave2)
-      do_cluster_user(master)
-      do_repl_user(master)
     else
       do_restart(master)
       do_restart(slave1)
       do_restart(slave2)
     end
+    # Set up the replication accounts for all servers, in case we
+    # decide to switch masters later.
+    [master, slave1, slave2].each do |s|
+      do_cluster_user(s)
+      do_repl_user(s)
+    end
+
     coordinates = get_coordinates(master)
     file = coordinates[:file]
     position = coordinates[:position]
@@ -400,7 +428,7 @@ class RepctlCmds < Thor
     do_start_slave(slave2)
   end
 
-  desc "install sample config files to DIRECTORY", "After initial install, use these "
+  desc "install_sample_configs DIRECTORY", "After initial install, use these "
   "as templates for configuration. The target directory must exist and be empty."
   def install_sample_configs(dest_dir) 
     source_dir =  File.join(Repctl::Config.const_get(:GEM_HOME), "config")
