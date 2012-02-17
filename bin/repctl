@@ -202,7 +202,7 @@ class RepctlCmds < Thor
   def status
     todos = options[:servers] || all_live_instances
     unless todos.any?
-      say "No Running Servers.", :blue
+      say "No Running Servers.  Are you running as the mysql user?", :blue
       return
     end
     header = sprintf("%-5s%-27s%-27s%-27s%-8s\n",

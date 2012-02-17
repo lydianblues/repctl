@@ -1,0 +1,9 @@
+1. Add a slave to an existing slave without
+breaking the first slave's relationship to
+its master.
+
+Use an option to add_slave?
+
+2. If you stop a slave and then restart it, it
+becomes a slave of instance 1, even if it was
+slaving off a different master before the shutdown.
