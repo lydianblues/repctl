@@ -415,14 +415,6 @@ EOT
        client.close if client
      end
      
-    # Return the process ID (pid) for an instance. 
-    def get_mysqld_pid(instance)
-      server = server_for_instance(instance)
-      pidfile = server['pid-file']
-      return nil unless File.exist?(pidfile)
-      Integer(File.open(pidfile, &:readline).strip)
-    end
-
     # 'master' is currently a slave that is to be the new master.
     # 'slaves' contains the list of slaves, one of these may be the
     # current master.

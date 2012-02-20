@@ -23,7 +23,13 @@ module Repctl
     end
 
     def all_live_servers
-      all_servers.select {|s| get_mysqld_pid(s["instance"]) }
+      s = all_servers.select do |s|
+        if pid = get_mysqld_pid(s["instance"])
+          mysqld_running?(pid)
+        else
+          false
+        end
+      end
     end
 
     def all_live_instances
@@ -43,9 +49,13 @@ module Repctl
       return nil
     end
 
-    private
+    # See if a MySQL server with the given pid is running.
+    def mysqld_running?(pid)
+      pids = %x{ ps -e | grep mysqld}.split("\n").map { |row| row =~ / (\d+) /; $1.to_i}
+      pids.include?(pid)
+    end
 
-    # Return the process ID (pid) for an instance. 
+    # Return the process ID (pid) for an instance.  This only consults the PID file.
     def get_mysqld_pid(instance)
       server = server_for_instance(instance)
       pidfile = server['pid-file']

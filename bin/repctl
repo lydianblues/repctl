@@ -213,6 +213,8 @@ class RepctlCmds < Thor
     
       todos.each do |i|
         coordinates = get_coordinates(i)
+        # be defensive
+        next unless coordinates
         master_file = coordinates[:file]
         master_pos =  coordinates[:position]
         slave = is_slave?(i)
@@ -269,25 +271,15 @@ class RepctlCmds < Thor
   # master has existing data.
   #
   desc "add_slave MASTER SLAVE", "Master has some data that is used to initialize the slave."
-  method_option :populate, :type => :boolean, :default => false
   def add_slave(master, slave)
-    reset(slave)
-    
-    if options[:populate]
-      invoke "utils:bench", [master, "/opt/MySQL/b2.properties"]
-    end
-    file, position = invoke "dump", [master]
-    
-    # Slave is running, but it is not yet configured as a slave.
-    # Load slave from the dump file...
-    invoke "restore", [slave]
-    
-    do_change_master(master, slave, :file => file, :position => position)
+    dumpfile = DEFAULT_DUMPFILE
+    do_reset(slave)
+    coordinates = do_dump(instance, dumpfile)
+    do_restore(slave, dumpfile)
+    do_change_master(master, slave, coordinates)
     do_start_slave(slave)
-
     do_cluster_user(slave)
     do_repl_user(slave)
-
   end
 
   DEFAULT_MASTER = 1
