@@ -274,12 +274,17 @@ class RepctlCmds < Thor
   def add_slave(master, slave)
     dumpfile = DEFAULT_DUMPFILE
     do_reset(slave)
-    coordinates = do_dump(instance, dumpfile)
+    coordinates = do_dump(master, dumpfile)
     do_restore(slave, dumpfile)
     do_change_master(master, slave, coordinates)
     do_start_slave(slave)
     do_cluster_user(slave)
     do_repl_user(slave)
+  end
+
+  desc "remove_slave SLAVE", "Remove a slave from the replica set."
+  def remove_slave(slave)
+    do_remove_slave(slave)
   end
 
   DEFAULT_MASTER = 1

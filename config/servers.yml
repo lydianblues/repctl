@@ -9,6 +9,7 @@
     innodb_data_home_dir: /opt/MySQL/instances/data1
     innodb_log_group_home_dir: /opt/MySQL/instances/data1
     pid-file: /opt/MySQL/instances/data1/deimos.pid
+    user: _mysql
 
 -   instance: 2
     defaults-file: "/opt/projects/repctl/config/mysql.cnf" 
@@ -20,6 +21,7 @@
     innodb_data_home_dir: /opt/MySQL/instances/data2
     innodb_log_group_home_dir: /opt/MySQL/instances/data2
     pid-file: /opt/MySQL/instances/data2/deimos.pid
+    user: _mysql
 
 -   instance: 3
     defaults-file: "/opt/projects/repctl/config/mysql.cnf" 
@@ -31,6 +33,7 @@
     innodb_data_home_dir: /opt/MySQL/instances/data3
     innodb_log_group_home_dir: /opt/MySQL/instances/data3
     pid-file: /opt/MySQL/instances/data3/deimos.pid
+    user: _mysql
 
 -   instance: 4
     defaults-file: "/opt/projects/repctl/config/mysql.cnf" 
@@ -42,4 +45,5 @@
     innodb_data_home_dir: /opt/MySQL/instances/data4
     innodb_log_group_home_dir: /opt/MySQL/instances/data4
     pid-file: /opt/MySQL/instances/data4/deimos.pid
+    user: _mysql
 

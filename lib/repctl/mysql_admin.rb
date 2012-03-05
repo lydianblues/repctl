@@ -131,7 +131,7 @@ module Repctl
             "--innodb_log_group_home_dir=#{server['innodb_log_group_home_dir']}",
             "--relay-log=#{Socket.gethostname}-relay-bin",
             "--socket=#{server['socket']}",
-            "--user=mysql")
+            "--user=#{server['user']}")
         end
       end
     end
@@ -438,6 +438,13 @@ EOT
       slaves.each do |s|
         do_change_master(master, s, coordinates, :restart => true)
       end
+    end
+
+    def do_remove_slave(instance)
+      stop_slave_io_thread(instance)
+      server = server_for_instance(instance)
+      datadir = server['datadir']
+      %x{ rm -f #{File.join(datadir, 'master.info')} } 
     end
 
     private

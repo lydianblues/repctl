@@ -51,7 +51,7 @@ module Repctl
 
     # See if a MySQL server with the given pid is running.
     def mysqld_running?(pid)
-      pids = %x{ ps -e | grep mysqld}.split("\n").map { |row| row =~ / (\d+) /; $1.to_i}
+      pids = %x{ ps -e | grep mysqld}.split("\n").map { |row| row =~ /\s*(\d+)\s+/; $1.to_i}
       pids.include?(pid)
     end
 
