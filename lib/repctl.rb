@@ -7,6 +7,7 @@ require File.join(config_dir, 'config')
 require "repctl/version"
 require "repctl/servers"
 require "repctl/mysql_admin"
+require "repctl/color"
 
 module Repctl
   # Your code goes here...

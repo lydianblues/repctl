@@ -40,6 +40,8 @@ class RepctlCmds < Thor
   include Repctl::Commands
   include Repctl::Servers
   include Repctl::Helpers
+  include Repctl::Utils
+  include Repctl::Color
 
   desc "start [INSTANCES]", "Start one or more defined server instances."
   method_option :all, :type  => :boolean, :aliases => "-a",
@@ -200,51 +202,12 @@ class RepctlCmds < Thor
   method_option :servers, :aliases => "-s", :type => :array,
     :desc => "Only check the status of given servers."
   def status
-    todos = options[:servers] || all_live_instances
-    unless todos.any?
-      say "No Running Servers.  Are you running as the mysql user?", :blue
-      return
-    end
     header = sprintf("%-5s%-27s%-27s%-27s%-8s\n",
       "inst", "master", "received", "applied", "lag")
-      
     loop do  
-      say header, :blue
-    
-      todos.each do |i|
-        coordinates = get_coordinates(i)
-        # be defensive
-        next unless coordinates
-        master_file = coordinates[:file]
-        master_pos =  coordinates[:position]
-        slave = is_slave?(i)
-        if slave
-          slave_status = get_slave_status(i)
-          recv_file = slave_status["Master_Log_File"]
-          recv_pos = slave_status["Read_Master_Log_Pos"]
-          apply_file = slave_status["Relay_Master_Log_File"]
-          apply_pos = slave_status["Exec_Master_Log_Pos"]
-          lag = slave_status["Seconds_Behind_Master"]
-          master_host = slave_status["Master_Host"]
-          master_port = slave_status["Master_Port"]
-          master_instance = instance_for(master_host, master_port)
-        end
-        
-        if slave
-          if lag
-            lag = lag.to_s
-          else
-            lag = "-"
-          end
-          format = "%1d%-4s%16s:%-10d%16s:%-10d%16s:%-10d%-8s"
-          str = sprintf(format, i, "(#{master_instance.to_s})", master_file,
-            master_pos, recv_file, recv_pos, apply_file, apply_pos, lag)
-        else
-          format = "%-5d%16s:%-10d"
-          str = sprintf(format, i, master_file, master_pos)
-        end
-      
-        say str + "\n", :yellow
+      output = formatted_status(options)
+      output.each do |line|
+        puts line
       end
       break unless options[:continuous]
       sleep options[:continuous]

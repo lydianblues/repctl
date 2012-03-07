@@ -20,6 +20,9 @@ Gem::Specification.new do |s|
 
   # specify any dependencies here; for example:
   s.add_development_dependency "rspec"
+  s.add_development_dependency "shotgun"
   s.add_runtime_dependency "thor"
   s.add_runtime_dependency "mysql2"
+  s.add_runtime_dependency "sinatra"
+  s.add_runtime_dependency "thin"
 end

@@ -1,50 +1,11 @@
 require 'sinatra'
 require 'repctl'
 
-module Repctl
-  module Webserver
-    # Generate an array of hashes, one hash per fabric-wide instance.
-    def repl_status(options = {})
-      todos = options[:servers] || all_live_instances
-      return [] unless todos.any?
-      status_array = []
-      todos.each do |i|
-        coordinates = get_coordinates(i)
-        next unless coordinates
-        master_file = coordinates[:file]
-        master_pos =  coordinates[:position]
-
-        fields = {}
-        puts server_for_instance(i)
-        fields[:server] = "#{server_for_instance(i)['hostname']}:#{i}"
-        fields[:generated_binlog] = "#{master_file}:#{master_pos}"
-        if is_slave?(i)
-          slave_status = get_slave_status(i)
-          recv_file = slave_status["Master_Log_File"]
-          recv_pos = slave_status["Read_Master_Log_Pos"]
-          apply_file = slave_status["Relay_Master_Log_File"]
-          apply_pos = slave_status["Exec_Master_Log_Pos"]
-          lag = slave_status["Seconds_Behind_Master"]
-          master_host = slave_status["Master_Host"]
-          master_port = slave_status["Master_Port"]
-          master_instance = instance_for(master_host, master_port)
-
-          fields[:applied_binlog] = "#{apply_file}:#{apply_pos}"
-          fields[:received_binlog] = "#{recv_file}:#{recv_pos}"
-          fields[:master] = "#{master_host}:#{master_instance}"
-          fields[:lag] = lag
-        end
-        status_array << fields
-      end
-      status_array
-    end
-  end
-end
-
 include Repctl::Config
 include Repctl::Commands
 include Repctl::Servers
-include Repctl::Webserver
+include Repctl::Utils
+include Repctl::Color
 
 get '/' do
   erb :main
@@ -55,10 +16,13 @@ post '/switch_master' do
 end
 
 get '/status' do
-  puts "status called"  
   @status_array = repl_status
   @timestamp = Time.now.strftime("%I:%M:%S %p")
-  erb :status, :layout => false
+  if request.accept == ['text/plain']
+    formatted_status.join("\n") + "\n"
+  else
+    erb :status , :layout => !request.xhr?
+  end
 end
 
 __END__
