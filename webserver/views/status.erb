@@ -1,0 +1,24 @@
+<div>
+   Status as of <%= @timestamp %>
+</div>
+<table class="gridtable">
+  <tr>
+    <th>instance</th>
+    <th>master</th>
+    <th>generated binlog</th>
+    <th>received binlog</th>
+    <th>applied binlog</th>
+    <th>lag (secs)</th>
+  </tr>
+  <% @status_array.each do |s| %>
+    <tr>
+      <td><%= s[:server] %></td>
+      <td><%= s[:master] %></td>
+      <td><%= s[:generated_binlog] %></td>
+      <td><%= s[:received_binlog] %></td>
+      <td><%= s[:applied_binlog] %></td>
+      <td><%= s[:lag] %></td>
+    </tr>  
+  <% end %>
+</table>
+

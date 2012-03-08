@@ -5,34 +5,6 @@ require 'fileutils'
 require 'repctl'
 require 'thor'
 
-module Repctl
-  module Helpers
-    def do_stop(instance)
-      do_admin(instance, "shutdown")
-    end
-
-    def do_reset(instance)
-      do_stop(instance)
-      do_config(instance)
-      do_start(instance)
-      do_secure_accounts(instance)
-    end
-
-    def do_start_slave(instance)
-      run_mysql_query(instance, "START SLAVE")
-    end
-
-    def do_stop_slave(instance)
-      run_mysql_query(instance, "STOP SLAVE")
-    end
-
-    def do_restart(instance)
-      do_admin(instance, "shutown")
-      do_start(instance)
-    end
-  end
-end
-
 class RepctlCmds < Thor
 
   include Thor::Actions
@@ -40,7 +12,6 @@ class RepctlCmds < Thor
   include Repctl::Commands
   include Repctl::Servers
   include Repctl::Helpers
-  include Repctl::Utils
   include Repctl::Color
 
   desc "start [INSTANCES]", "Start one or more defined server instances."
@@ -220,8 +191,7 @@ class RepctlCmds < Thor
     coordinates = do_dump(instance, dumpfile)
     file = coordinates[:file]
     position = coordinates[:position]
-    puts "(#{file}, #{position})"
-    [file, String(position)]
+    say "Dumped at coordinates (#{file}, #{position})", :green
   end
   
   desc "restore INSTANCE [DUMPFILE]", "Restore INSTANCE from a \'mysqldump\' file DUMPFILE."
@@ -236,13 +206,7 @@ class RepctlCmds < Thor
   desc "add_slave MASTER SLAVE", "Master has some data that is used to initialize the slave."
   def add_slave(master, slave)
     dumpfile = DEFAULT_DUMPFILE
-    do_reset(slave)
-    coordinates = do_dump(master, dumpfile)
-    do_restore(slave, dumpfile)
-    do_change_master(master, slave, coordinates)
-    do_start_slave(slave)
-    do_cluster_user(slave)
-    do_repl_user(slave)
+    do_add_slave(master, slave, dumpfile)
   end
 
   desc "remove_slave SLAVE", "Remove a slave from the replica set."
@@ -345,16 +309,7 @@ class RepctlCmds < Thor
     "Set up a single master/slave replication pair from the very beginning."
   def repl_pair(master, slave)
     say "master is #{master}, slave is #{slave}", :green
-    do_reset(master)
-    do_reset(slave)
-    do_cluster_user(master)
-    do_repl_user(master)
-    coordinates = get_coordinates(master)
-    file = coordinates[:file]
-    position = coordinates[:position]
-    say "File is #{file}, Position is #{position}", :green
-    do_change_master(master, slave, :file => file, :position => position)
-    do_start_slave(slave)
+    do_repl_pair(master, slave)
   end
 
   desc "repl_trio MASTER SLAVE1 SLAVE2",
@@ -362,30 +317,7 @@ class RepctlCmds < Thor
   method_option :reset, :type => :boolean, :default => true
   def repl_trio(master, slave1, slave2)
     say "master is #{master}, slaves are #{slave1} and #{slave2}", :green
-    if options[:reset]
-      do_reset(master)
-      do_reset(slave1)
-      do_reset(slave2)
-    else
-      do_restart(master)
-      do_restart(slave1)
-      do_restart(slave2)
-    end
-    # Set up the replication accounts for all servers, in case we
-    # decide to switch masters later.
-    [master, slave1, slave2].each do |s|
-      do_cluster_user(s)
-      do_repl_user(s)
-    end
-
-    coordinates = get_coordinates(master)
-    file = coordinates[:file]
-    position = coordinates[:position]
-    say "File is #{file}, Position is #{position}", :green
-    do_change_master(master, slave1, :file => file, :position => position)
-    do_start_slave(slave1)
-    do_change_master(master, slave2, :file => file, :position => position)
-    do_start_slave(slave2)
+    do_repl_trio(master, slave1, slave2, options)
   end
 
   desc "install_sample_configs DIRECTORY", "After initial install, use these "

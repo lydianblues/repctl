@@ -1,4 +1,5 @@
 *.gem
 .bundle
+webserver/sass/.sass-cache/*
 Gemfile.lock
 pkg/*
