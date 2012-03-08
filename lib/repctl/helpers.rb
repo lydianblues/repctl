@@ -3,6 +3,7 @@ module Repctl
 
     include Commands
     include Servers
+    include Config
 
     def do_stop(instance)
       do_admin(instance, "shutdown")
@@ -96,7 +97,7 @@ module Repctl
       output
     end
 
-    def do_add_slave(master, slave, dumpfile)
+    def do_add_slave(master, slave, dumpfile = DEFAULT_DUMPFILE)
       do_reset(slave)
       coordinates = do_dump(master, dumpfile)
       do_restore(slave, dumpfile)

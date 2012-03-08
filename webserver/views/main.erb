@@ -36,3 +36,16 @@
     </div>
 </section>
 
+<section>
+  <header><h2>Add a New Slave to Existing Master</h2></header>
+    <form id="add-slave" action="/add_slave" method="post">
+      <p>Master: <input type="text" name="add_slave[master]" size="20"/></p>
+      <p>Slave: <input type="text" name="add_slave[slaves]" size="20"/></p>
+      <input type="submit" value="Add Slave to Master">
+    </form>
+    <div>
+      <div style="float:left;" id="add-slave-result"></div>
+      <img style="float:left;" class="spinner" id='add-slave-spinner' src='images/wait30.gif' alt='spinner'></img>
+    </div>
+</section>
+

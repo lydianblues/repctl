@@ -4,7 +4,7 @@ require 'repctl'
 include Repctl::Config
 include Repctl::Commands
 include Repctl::Servers
-include Repctl::Utils
+include Repctl::Helpers
 include Repctl::Color
 
 def time
@@ -59,6 +59,29 @@ post '/switch_master' do
       do_switch_master(master, slaves)
     end
     @message = "Switch master processed in #{secs} secs."
+    @success = true
+  end
+  if request.accept == ['text/plain']
+    if @success
+      "#{@message}\n".colorize(:green)
+    else
+      "#{@message}\n".colorize(:red)
+    end
+  else
+    erb :operation_complete, :layout => !request.xhr?
+  end
+end
+
+post '/add_slave' do
+  @message, master, slaves = master_slave_params(params["add_slave"])
+  slave = slaves[0]
+  if @message
+    @success = false
+  else
+    secs = time do
+      do_add_slave(master, slave)
+    end
+    @message = "Added slave #{slave} to master #{master} in #{secs} secs."
     @success = true
   end
   if request.accept == ['text/plain']

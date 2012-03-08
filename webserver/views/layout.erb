@@ -19,7 +19,7 @@
          $('.spinner').show();
          $.post('/switch_master', $(this).serialize(), function(data) { 
            $('.spinner').hide();
-           $("#switch-master-result").html(data)
+           $('#switch-master-result').html(data)
          });
          return false;
        });
@@ -28,7 +28,16 @@
          $('#repl-trio-spinner').show();
          $.post('/repl_trio', $(this).serialize(), function(data) { 
            $('#repl-trio-spinner').hide();
-           $("#repl-trio-result").html(data)
+           $('#repl-trio-result').html(data)
+         });
+         return false;
+       });
+
+       $('#add-slave').submit(function() { 
+         $('#add-slave-spinner').show();
+         $.post('/add_slave', $(this).serialize(), function(data) { 
+           $('#add-slave-spinner').hide();
+           $('#add-slave-result').html(data)
          });
          return false;
        });
