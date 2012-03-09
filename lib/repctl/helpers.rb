@@ -25,7 +25,7 @@ module Repctl
     end
 
     def do_restart(instance)
-      do_admin(instance, "shutown")
+      do_admin(instance, "shutdown")
       do_start(instance)
     end
 
@@ -97,10 +97,16 @@ module Repctl
       output
     end
 
-    def do_add_slave(master, slave, dumpfile = DEFAULT_DUMPFILE)
-      do_reset(slave)
-      coordinates = do_dump(master, dumpfile)
-      do_restore(slave, dumpfile)
+    def do_add_slave(master, slave, options = {})
+      puts options.to_yaml
+      sync = options.has_key?(:sync) ? options[:sync] : false
+      dumpfile = options.has_key?(:dumpfile) ? options[:dumpfile] : DEFAULT_DUMPFILE
+      if sync
+        do_reset(slave)
+        coordinates = do_dump(master, dumpfile)
+        do_restore(slave, dumpfile)
+      end
+      coordinates = get_coordinates(master)
       do_change_master(master, slave, coordinates)
       do_start_slave(slave)
       do_cluster_user(slave)
@@ -120,7 +126,8 @@ module Repctl
     end
 
     def do_repl_trio(master, slave1, slave2, options = {})
-      if options[:reset]
+      reset = options.has_key?(:reset) ? options[:reset] : true
+      if reset
         do_reset(master)
         do_reset(slave1)
         do_reset(slave2)

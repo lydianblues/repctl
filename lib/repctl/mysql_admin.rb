@@ -113,6 +113,27 @@ module Repctl
       if pid
         puts "Instance #{instance} with PID #{pid} is already running."
       else 
+        server = server_for_instance(instance)
+        puts "Starting instance #{instance} with PID #{Process.pid}."
+        pid = spawn(["#{MYSQL_HOME}/bin/mysqld", "mysqld"], 
+          "--defaults-file=#{server['defaults-file']}",
+          "--datadir=#{server['datadir']}",
+          "--port=#{server['port']}",
+          "--server-id=#{server['server-id']}",
+          "--innodb_data_home_dir=#{server['innodb_data_home_dir']}",
+          "--innodb_log_group_home_dir=#{server['innodb_log_group_home_dir']}",
+          "--relay-log=#{Socket.gethostname}-relay-bin",
+          "--socket=#{server['socket']}",
+          "--user=#{server['user']}")
+        Process.detach(pid)
+        unless live?(instance)
+          puts "Waiting for server..."
+          sleep(1)
+        end
+      end
+    end
+
+=begin
         pid = fork
         unless pid
           # We're in the child.
@@ -129,9 +150,10 @@ module Repctl
             "--relay-log=#{Socket.gethostname}-relay-bin",
             "--socket=#{server['socket']}",
             "--user=#{server['user']}")
+          Process.detach(pid)
         end
-      end
     end
+=end
     
     def do_admin(instance, operation)
       server = server_for_instance(instance)
@@ -379,12 +401,16 @@ EOT
       
       if client
         cmd = "CREATE USER \'cluster\'@\'localhost\' IDENTIFIED BY \'secret\'"
+        puts cmd
         client.query(cmd)
         cmd = "GRANT ALL PRIVILEGES ON *.* TO \'cluster\'@'\localhost\'"
+        puts cmd
         client.query(cmd)
         cmd = "CREATE USER \'cluster\'@\'%\' IDENTIFIED BY \'secret\'"
+        puts cmd
         client.query(cmd)
         cmd = "GRANT ALL PRIVILEGES ON *.* TO \'cluster\'@\'%\'"
+        puts cmd
         client.query(cmd)
       else
         puts "Could not open connection to MySQL instance #{instance}."

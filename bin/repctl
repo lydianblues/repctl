@@ -203,10 +203,19 @@ class RepctlCmds < Thor
   # Setting Up Replication with Existing Data using the 'mysqldump' utility. The
   # master has existing data.
   #
-  desc "add_slave MASTER SLAVE", "Master has some data that is used to initialize the slave."
+  desc "add_slave MASTER SLAVE", "Establish a new master/slave relationship."
+  method_option :sync, :type  => :boolean, :aliases => "-s",
+    :default => false,  :desc => "Initialize slave via dump/restore from master"
+  method_option :dumpfile, :type  => :string, :aliases => "-d",
+    :default => DEFAULT_DUMPFILE,  :desc => "Name of the dumpfile"
+  long_desc <<-EOS
+    Add a new slave to an existing server which may already be the
+    master for some other slaves.  The 'sync' option is destroys any
+    data that may already be on the slave.  Before replicaton is started
+    the slave is initialized via dump/restore from the master.
+  EOS
   def add_slave(master, slave)
-    dumpfile = DEFAULT_DUMPFILE
-    do_add_slave(master, slave, dumpfile)
+    do_add_slave(master, slave, options)
   end
 
   desc "remove_slave SLAVE", "Remove a slave from the replica set."

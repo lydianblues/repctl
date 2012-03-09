@@ -3,84 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <title>MySQL Replication Manager</title>
+
+  <link rel="stylesheet" href="stylesheets/repctl.css" type="text/css">
+
   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js">
   </script>
-
-  <script type="text/javascript">
-    /* Fix this.  It should not be in the global namespace. */
-    function getUpdate() { 
-      $('#status-table').load('/status');
-      setTimeout(getUpdate, 3000);
-    }
-    $(document).ready(function() { 
-       getUpdate();
-
-       $('#switch-master').submit(function() { 
-         $('.spinner').show();
-         $.post('/switch_master', $(this).serialize(), function(data) { 
-           $('.spinner').hide();
-           $('#switch-master-result').html(data)
-         });
-         return false;
-       });
-
-       $('#repl-trio').submit(function() { 
-         $('#repl-trio-spinner').show();
-         $.post('/repl_trio', $(this).serialize(), function(data) { 
-           $('#repl-trio-spinner').hide();
-           $('#repl-trio-result').html(data)
-         });
-         return false;
-       });
-
-       $('#add-slave').submit(function() { 
-         $('#add-slave-spinner').show();
-         $.post('/add_slave', $(this).serialize(), function(data) { 
-           $('#add-slave-spinner').hide();
-           $('#add-slave-result').html(data)
-         });
-         return false;
-       });
-
-    });
+  <script type="text/javascript" src="javascripts/repctl.js">
   </script>
 
-  <style type="text/css">
-    #banner { 
-      text-align: center;
-    }
-    .spinner { 
-      display:none;
-    }
-    .success { 
-      color: green;
-    }
-    .failure { 
-      color: red;
-    }
-    table.gridtable {
-      font-family: verdana,arial,sans-serif;
-      font-size:11px;
-      color:#333333;
-      border-width: 1px;
-      border-color: #666666;
-      border-collapse: collapse;
-    }
-    table.gridtable th {
-      border-width: 1px;
-      padding: 8px;
-      border-style: solid;
-      border-color: #666666;
-      background-color: #dedede;
-    }
-    table.gridtable td {
-      border-width: 1px;
-      padding: 8px;
-      border-style: solid;
-      border-color: #666666;
-      background-color: #ffffff;
-    }
-  </style>
 </head>
 
 <body>

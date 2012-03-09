@@ -28,7 +28,7 @@
     <form id="repl-trio" action="/repl_trio" method="post">
       <p>Master: <input type="text" name="repl_trio[master]" size="20"/></p>
       <p>Slaves: <input type="text" name="repl_trio[slaves]" size="20"/></p>
-      <input type="submit" value="Create Repliction Trio">
+      <input type="submit" value="Create Replication Trio">
     </form>
     <div>
       <div style="float:left;" id="repl-trio-result"></div>
@@ -37,15 +37,29 @@
 </section>
 
 <section>
-  <header><h2>Add a New Slave to Existing Master</h2></header>
+  <header><h2>Add a New Slave to Replica Set</h2></header>
     <form id="add-slave" action="/add_slave" method="post">
       <p>Master: <input type="text" name="add_slave[master]" size="20"/></p>
       <p>Slave: <input type="text" name="add_slave[slaves]" size="20"/></p>
+      <label for="add_slave[sync]">Synchronize slave to master before starting replication</label>
+      <input name="add_slave[sync]" value="sync" type="checkbox"/><br>
       <input type="submit" value="Add Slave to Master">
     </form>
     <div>
       <div style="float:left;" id="add-slave-result"></div>
       <img style="float:left;" class="spinner" id='add-slave-spinner' src='images/wait30.gif' alt='spinner'></img>
+    </div>
+</section>
+
+<section>
+  <header><h2>Remove Slave from Replica Set</h2></header>
+    <form id="remove-slave" action="/remove_slave" method="post">
+      <p>Slave: <input type="text" name="remove_slave[slave]" size="20"/></p>
+      <input type="submit" value="Remove Slave from Replica Set">
+    </form>
+    <div>
+      <div style="float:left;" id="remove-slave-result"></div>
+      <img style="float:left;" class="spinner" id='remove-slave-spinner' src='images/wait30.gif' alt='spinner'></img>
     </div>
 </section>
 
