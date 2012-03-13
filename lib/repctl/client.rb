@@ -128,4 +128,4 @@ def self_test
   puts get_status(host)
 end
 
-self_test
+# self_test
