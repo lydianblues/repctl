@@ -58,7 +58,7 @@ post '/switch_master' do
     secs = time do
       do_switch_master(master, slaves)
     end
-    @message = "Switch master processed in #{secs} secs."
+    @message = "Switch to master #{master.to_s} processed in #{secs} secs."
     @success = true
   end
   if request.accept == ['text/plain']
@@ -135,7 +135,7 @@ post '/repl_trio' do
       do_repl_trio(master, slaves[0], slaves[1])
     end
     @message = "Create replication trio with master #{master} and " +
-      "slaves #{slaves[0] and slaves[1]} in #{secs} secs."
+      "slaves #{slaves[0]} and #{slaves[1]} in #{secs} secs."
     @success = true
   end
   if request.accept == ['text/plain']
