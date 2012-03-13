@@ -18,19 +18,7 @@ module Repctl
         :port => opts[:port] || 9393, # 7250
       }
       uri = URI::HTTP.build(components)
-      http = Net::HTTP.new(uri.host, uri.port)
-#     http.use_ssl = true
-#     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-
-      req = Net::HTTP::Get.new(uri.request_uri)
-      req.basic_auth(USER, PASSWORD)
-      req['Accept'] = 'text/plain'
-      response = http.request(req)
-      if response.is_a?(Net::HTTPOK)
-        response.body
-      else
-        response.message
-      end
+      do_get(uri)
     end
 
     def switch_master(host, master, slaves, opts = {})
@@ -43,20 +31,7 @@ module Repctl
         :port => opts[:port] || 9393, # 7250
       }
       uri = URI::HTTP.build(components)
-      http = Net::HTTP.new(uri.host, uri.port)
-      #http.use_ssl = true
-      #http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      req = Net::HTTP::Post.new(uri.request_uri)
-      req.basic_auth(USER, PASSWORD)
-      req['Accept'] = 'text/plain'
-      req['Content-Type'] = "application/x-www-form-urlencoded"
-      req.body = body
-      response = http.request(req)
-      if response.is_a?(Net::HTTPOK)
-        response.body
-      else
-        response.message
-      end
+      do_post(uri, body)
     end
 
     def add_slave(host, master, slave, opts = {})
@@ -72,20 +47,7 @@ module Repctl
         :port => opts[:port] || 9393, # 7250
       }
       uri = URI::HTTP.build(components)
-      http = Net::HTTP.new(uri.host, uri.port)
-      #http.use_ssl = true
-      #http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      req = Net::HTTP::Post.new(uri.request_uri)
-      req.basic_auth(USER, PASSWORD)
-      req['Accept'] = 'text/plain'
-      req['Content-Type'] = "application/x-www-form-urlencoded"
-      req.body = body
-      response = http.request(req)
-      if response.is_a?(Net::HTTPOK)
-        response.body
-      else
-        response.message
-      end
+      do_post(uri, body)
     end
 
     def remove_slave(host, slave, opts = {})
@@ -97,20 +59,7 @@ module Repctl
         :port => opts[:port] || 9393, # 7250
       }
       uri = URI::HTTP.build(components)
-      http = Net::HTTP.new(uri.host, uri.port)
-      #http.use_ssl = true
-      #http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      req = Net::HTTP::Post.new(uri.request_uri)
-      req.basic_auth(USER, PASSWORD)
-      req['Accept'] = 'text/plain'
-      req['Content-Type'] = "application/x-www-form-urlencoded"
-      req.body = body
-      response = http.request(req)
-      if response.is_a?(Net::HTTPOK)
-        response.body
-      else
-        response.message
-      end
+      do_post(uri, body)
     end
 
     def repl_trio(host, master, slaves, opts = {})
@@ -123,6 +72,28 @@ module Repctl
         :port => opts[:port] || 9393, # 7250
       }
       uri = URI::HTTP.build(components)
+      do_post(uri, body)
+    end
+
+    private
+
+    def do_get(uri)
+      http = Net::HTTP.new(uri.host, uri.port)
+#     http.use_ssl = true
+#     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+      req = Net::HTTP::Get.new(uri.request_uri)
+      req.basic_auth(USER, PASSWORD)
+      req['Accept'] = 'text/plain'
+      response = http.request(req)
+      if response.is_a?(Net::HTTPOK)
+        response.body
+      else
+        response.message
+      end
+    end
+
+    def do_post(uri, body)
       http = Net::HTTP.new(uri.host, uri.port)
       #http.use_ssl = true
       #http.verify_mode = OpenSSL::SSL::VERIFY_NONE
