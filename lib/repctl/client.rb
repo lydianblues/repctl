@@ -7,6 +7,10 @@ require 'net/http'
 
 module Repctl
   module Client
+
+    USER = 'admin'
+    PASSWORD = 'secret'
+
     def get_status(host, opts = {})
       components = { 
         :host => host,
@@ -15,13 +19,18 @@ module Repctl
       }
       uri = URI::HTTP.build(components)
       http = Net::HTTP.new(uri.host, uri.port)
-      #http.use_ssl = true
-      #http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      headers = { 
-        "Accept" => "text/plain"
-      }
-      response = http.get(uri.path, headers)
-      response.body
+#     http.use_ssl = true
+#     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+      req = Net::HTTP::Get.new(uri.request_uri)
+      req.basic_auth(USER, PASSWORD)
+      req['Accept'] = 'text/plain'
+      response = http.request(req)
+      if response.is_a?(Net::HTTPOK)
+        response.body
+      else
+        response.message
+      end
     end
 
     def switch_master(host, master, slaves, opts = {})
@@ -37,12 +46,17 @@ module Repctl
       http = Net::HTTP.new(uri.host, uri.port)
       #http.use_ssl = true
       #http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      headers = { 
-        "Content-Type" => "application/x-www-form-urlencoded",
-        "Accept" => "text/plain"
-      }
-      response = http.post(uri.path, body, headers)
-      response.body
+      req = Net::HTTP::Post.new(uri.request_uri)
+      req.basic_auth(USER, PASSWORD)
+      req['Accept'] = 'text/plain'
+      req['Content-Type'] = "application/x-www-form-urlencoded"
+      req.body = body
+      response = http.request(req)
+      if response.is_a?(Net::HTTPOK)
+        response.body
+      else
+        response.message
+      end
     end
 
     def add_slave(host, master, slave, opts = {})
@@ -61,12 +75,17 @@ module Repctl
       http = Net::HTTP.new(uri.host, uri.port)
       #http.use_ssl = true
       #http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      headers = { 
-        "Content-Type" => "application/x-www-form-urlencoded",
-        "Accept" => "text/plain"
-      }
-      response = http.post(uri.path, body, headers)
-      response.body
+      req = Net::HTTP::Post.new(uri.request_uri)
+      req.basic_auth(USER, PASSWORD)
+      req['Accept'] = 'text/plain'
+      req['Content-Type'] = "application/x-www-form-urlencoded"
+      req.body = body
+      response = http.request(req)
+      if response.is_a?(Net::HTTPOK)
+        response.body
+      else
+        response.message
+      end
     end
 
     def remove_slave(host, slave, opts = {})
@@ -81,12 +100,17 @@ module Repctl
       http = Net::HTTP.new(uri.host, uri.port)
       #http.use_ssl = true
       #http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      headers = { 
-        "Content-Type" => "application/x-www-form-urlencoded",
-        "Accept" => "text/plain"
-      }
-      response = http.post(uri.path, body, headers)
-      response.body
+      req = Net::HTTP::Post.new(uri.request_uri)
+      req.basic_auth(USER, PASSWORD)
+      req['Accept'] = 'text/plain'
+      req['Content-Type'] = "application/x-www-form-urlencoded"
+      req.body = body
+      response = http.request(req)
+      if response.is_a?(Net::HTTPOK)
+        response.body
+      else
+        response.message
+      end
     end
 
     def repl_trio(host, master, slaves, opts = {})
@@ -102,12 +126,17 @@ module Repctl
       http = Net::HTTP.new(uri.host, uri.port)
       #http.use_ssl = true
       #http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      headers = { 
-        "Content-Type" => "application/x-www-form-urlencoded",
-        "Accept" => "text/plain"
-      }
-      response = http.post(uri.path, body, headers)
-      response.body
+      req = Net::HTTP::Post.new(uri.request_uri)
+      req.basic_auth(USER, PASSWORD)
+      req['Accept'] = 'text/plain'
+      req['Content-Type'] = "application/x-www-form-urlencoded"
+      req.body = body
+      response = http.request(req)
+      if response.is_a?(Net::HTTPOK)
+        response.body
+      else
+        response.message
+      end
     end
   end
 end

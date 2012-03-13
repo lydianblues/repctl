@@ -1,6 +1,11 @@
 require 'sinatra'
 require 'repctl'
 
+# Add middleware for HTTP Basic Authentication.
+use Rack::Auth::Basic do |username, password|
+  username == 'admin' && password == 'secret'
+end
+
 include Repctl::Config
 include Repctl::Commands
 include Repctl::Servers
