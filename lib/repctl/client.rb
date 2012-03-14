@@ -111,21 +111,3 @@ module Repctl
     end
   end
 end
-
-include Repctl::Client
-
-def self_test
-  host = "deimos"
-  puts repl_trio(host, 2, [3, 4])
-  puts get_status(host)
-  puts add_slave(host, 2, 1)
-  puts get_status(host)
-  puts switch_master(host, 3, [1, 2, 4])
-  puts get_status(host)
-  puts remove_slave(host, 1)
-  puts get_status(host)
-  puts remove_slave(host, 4)
-  puts get_status(host)
-end
-
-# self_test
