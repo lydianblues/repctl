@@ -11,7 +11,7 @@ module Repctl
     USER = 'admin'
     PASSWORD = 'secret'
 
-    def get_status(host, opts = {})
+    def repl_status(host, opts = {})
       components = { 
         :host => host,
         :path => "/status",
@@ -89,7 +89,7 @@ module Repctl
       if response.is_a?(Net::HTTPOK)
         response.body
       else
-        response.message
+        "Repctl::Client#do_get: #{response.message}"
       end
     end
 
@@ -106,7 +106,7 @@ module Repctl
       if response.is_a?(Net::HTTPOK)
         response.body
       else
-        response.message
+        "Repctl::Client#do_post: #{response.message}"
       end
     end
   end
